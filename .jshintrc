@@ -1,0 +1,33 @@
+{
+
+    "node"     : true,
+    "es5"      : true,
+    "browser"  : true,
+
+    "boss"     : false,
+    "curly"    : false,
+    "debug"    : false,
+    "devel"    : false,
+    "eqeqeq"   : false,
+    "evil"     : true,
+    "forin"    : false,
+    "immed"    : true,
+    "laxbreak" : false,
+    "newcap"   : true,
+    "noarg"    : true,
+    "noempty"  : false,
+    "nonew"    : false,
+    "nomen"    : false,
+    "onevar"   : false,
+    "plusplus" : false,
+    "regexp"   : false,
+    "undef"    : true,
+    "sub"      : true,
+    "strict"   : false,
+    "white"    : false,
+    "unused"   : true,
+    "smarttabs": true,
+    "shadow"   : false,
+    "laxbreak" : true
+
+}
