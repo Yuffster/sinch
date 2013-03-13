@@ -1,13 +1,13 @@
 {
 	"author": "Michelle Steigerwalt <msteigerwalt@gmail.com>",
-	"name": "synchrony",
+	"name": "sinch",
 	"description": "A powerful wrapper for interfaces which creates extendable, synchronisity-agnostic interfaces which can be seamlessly passed around to other desynchronous interfaces as if they were synchronous arguments.",
 	"version": "0.0.2",
-	"homepage": "http://github.com/Yuffster/synchrony",
-	"main": "./synchrony.js",
+	"homepage": "http://github.com/Yuffster/sinch",
+	"main": "./sinch.js",
 	"repository": {
 		"type": "git",
-		"url": "git://github.com/Yuffster/synchrony"
+		"url": "git://github.com/Yuffster/sinch"
 	},
 	"scripts": {
 		"test": "node tests/tests.js"
