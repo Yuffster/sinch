@@ -184,8 +184,9 @@ var Cat = Sinch({
 	// interface of the object and queue everything until the
 	// callback is returned.
 	init: function(name, cb) {
-		this.name = name;
+		var self = this;
 		setTimeout(function() {
+			self.name = name;
 			cb();
 		}, 200);
 	},
