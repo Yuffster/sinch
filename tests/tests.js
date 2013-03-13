@@ -1,19 +1,19 @@
-var synchrony = require('../sinch'),
-    get = require('./waiter');
+var Sinch = require('../sinch'),
+    get   = require('./waiter');
 
 // We can use normal everyday return statements and still pretend the
 // code is asynchronous on the other end, when we want to.
-var sync = synchrony(function(mess) { 
+var sync = Sinch(function(mess) { 
 	return "returned: "+mess;
 });
 
 // Or we can take the same code and use a traditional callback style.
-var async = synchrony(
+var async = Sinch(
 	function(mess, cb) { cb("called back: "+mess); }
 );
 
 // This works for dynamic arguments, too, synchronously and asynchronously.
-var add_sync = synchrony(function() { 
+var add_sync = Sinch(function() { 
     var n = 0, cb = arguments[arguments.length-1];
     if (typeof cb != "function") cb = false;
     for (var i in arguments) {
@@ -22,7 +22,7 @@ var add_sync = synchrony(function() {
     return n;
 });
 
-var add_async = synchrony(function() {
+var add_async = Sinch(function() {
     var n = 0, cb = arguments[arguments.length-1];
     if (typeof cb != "function") cb = false;
     for (var i in arguments) {
@@ -65,7 +65,7 @@ add_async(4,2,add_async(add_async(3,3)), add_sync(22))(get(34));
 // Wrapping all of our functions individually is a little annoying.
 // Let's just wrap every function within an object.
 
-var Sync = synchrony({
+var Sync = Sinch({
 	
 	add: function() { 
 		var n = 0, cb = arguments[arguments.length-1];
@@ -83,7 +83,7 @@ var Sync = synchrony({
 
 sync = new Sync();
 
-var Async = synchrony({
+var Async = Sinch({
 	
 	// We can support object properties like in normal objects.
 	total: 0,
@@ -148,7 +148,7 @@ async.count(get("Count has been called 3 times."));
 
 // Let's make a Mouse object to be returned as our type.
 
-var Mouse = synchrony({
+var Mouse = Sinch({
 
 	counts: { squeak: 0, sniff: 0 },
 
@@ -176,7 +176,7 @@ mouse.squeak(get("Mortimer the mouse sniffs (1)"));
 
 // Let's define a Cat so we have something to return a Mouse instance.
 
-var Cat = synchrony({
+var Cat = Sinch({
 
 	counts: {'meow':0, 'meh':0},
 
@@ -260,7 +260,7 @@ catty.meow(get("Mimi the cat sez: meh(3)"));
 // We can also extend objects by using the Extends magic property.  Tiger will
 // have everything associated with Cat, including the recursive merge into the
 // counts object.
-var Tiger = synchrony({
+var Tiger = Sinch({
 
 	Extends: Cat,
 
