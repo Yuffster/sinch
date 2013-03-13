@@ -2,6 +2,10 @@
 
 ---
 
+[![Build Status](https://secure.travis-ci.org/Yuffster/Sinch.png)](http://travis-ci.org/Yuffster/Sinch)
+
+---
+
 Sinch is a lightweight, powerful JavaScript module which allows developers
 to create APIs which act in a conistent manner regardless of whether they are
 synchronous (returning their values immediately) or asynchronous (forcing the
