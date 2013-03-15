@@ -1,35 +1,16 @@
-var Sinch = require('../sinch'),
-    get   = require('./waiter');
+var sinch    = require('../sinch'),
+    get      = require('./waiter');
 
 // We can use normal everyday return statements and still pretend the
 // code is asynchronous on the other end, when we want to.
-var sync = Sinch(function(mess) { 
+var sync = sinch(function(mess) { 
 	return "returned: "+mess;
 });
 
 // Or we can take the same code and use a traditional callback style.
-var async = Sinch(
-	function(mess, cb) { cb("called back: "+mess); }
+var async = sinch(
+	function(mess) { this.callback("called back: "+mess); }
 );
-
-// This works for dynamic arguments, too, synchronously and asynchronously.
-var add_sync = Sinch(function() { 
-    var n = 0, cb = arguments[arguments.length-1];
-    if (typeof cb != "function") cb = false;
-    for (var i in arguments) {
-        if (arguments[i]!==cb) n += arguments[i];
-    }
-    return n;
-});
-
-var add_async = Sinch(function() {
-    var n = 0, cb = arguments[arguments.length-1];
-    if (typeof cb != "function") cb = false;
-    for (var i in arguments) {
-        if (arguments[i]!==cb) n += arguments[i];
-    }
-    cb(n);
-});
 
 // This allows us to either explicitly use a callback, as normal...
 sync(
@@ -47,11 +28,42 @@ async('async with traditional callback', get(
 	"called back: async with traditional callback"
 ));
 
+var add_sync_cb = sinch(function() { 
+	var n = 0, cb = arguments[arguments.length-1];
+	if (typeof cb != "function") cb = false;
+	for (var i in arguments) if (arguments[i]!=cb) n += arguments[i];
+	return n;
+});
+
+var add_async_cb = sinch(function() {
+	var n = 0, cb = arguments[arguments.length-1];
+	if (typeof cb != "function") cb = false;
+	for (var i in arguments) if (arguments[i]!=cb) n += arguments[i];
+	this.callback(n);
+});
+
 // Dynamic arguments are fine, as long as the last function can be a callback.
+add_async_cb(1,2,3,4,5)(get(15));
+add_async_cb(1,2,3,4,5,get(15));
+
+add_sync_cb(1,2,3,4,5,get(15));
+
+var add_sync = sinch(function() { 
+	var n = 0;
+	for (var i in arguments) n += arguments[i];
+	return n;
+});
+
+var add_async = sinch(function() {
+	var n = 0;
+	for (var i in arguments) n += arguments[i];
+	this.callback(n);
+});
+
 add_async(1,2,3,4,5)(get(15));
 add_async(1,2,3,4,5,get(15));
-
 add_sync(1,2,3,4,5,get(15));
+
 
 // We can pass the results of one API method to another as if the APIs were
 // synchronous.
@@ -65,7 +77,7 @@ add_async(4,2,add_async(add_async(3,3)), add_sync(22))(get(34));
 // Wrapping all of our functions individually is a little annoying.
 // Let's just wrap every function within an object.
 
-var Sync = Sinch({
+var Sync = sinch({
 	
 	add: function() { 
 		var n = 0, cb = arguments[arguments.length-1];
@@ -83,7 +95,7 @@ var Sync = Sinch({
 
 sync = new Sync();
 
-var Async = Sinch({
+var Async = sinch({
 	
 	// We can support object properties like in normal objects.
 	total: 0,
@@ -93,11 +105,11 @@ var Async = Sinch({
 		if (typeof cb != "function") cb = false;
 		for (var i in arguments) {
 			if (arguments[i]!==cb) n += arguments[i];
-		} cb(n);
+		} this.callback(n);
 	},
 		
-	log: function(mess, cb) {
-		cb("Called back: "+mess);
+	log: function(mess) {
+		this.callback("Called back: "+mess);
 	},
 	
 	count: function() {
@@ -135,7 +147,7 @@ sync.add(1,2,3,4,5)(get(15));
 async.log(async.add(2,3,4))(get("Called back: 9"));
 async.add(async.add(12), async.add(22))(get(34));
 async.log(async.add(add_async(12), async.add(22)))(get("Called back: 34"));
-async.add(4,2,add_async(add_async(3,3)), add_async(22))(get(34));
+async.add(4,2,add_async(add_async(3,3)),add_async(22))(get(34));
 sync.add(1,2,3,4)(get(10));
 
 async.count(get("Count has been called 1 times."));
@@ -148,13 +160,13 @@ async.count(get("Count has been called 3 times."));
 
 // Let's make a Mouse object to be returned as our type.
 
-var Mouse = Sinch({
+var Mouse = sinch({
 
 	counts: { squeak: 0, sniff: 0 },
 
-	init: function(name,cb) {
+	init: function(name) {
 		this.name = name;
-		cb();
+		this.callback();
 	},
 
 	squeak: function() {
@@ -176,18 +188,18 @@ mouse.squeak(get("Mortimer the mouse sniffs (1)"));
 
 // Let's define a Cat so we have something to return a Mouse instance.
 
-var Cat = Sinch({
+var Cat = sinch({
 
 	counts: {'meow':0, 'meh':0},
 
 	// For asynchronous initializations, we want to return the 
 	// interface of the object and queue everything until the
 	// callback is returned.
-	init: function(name, cb) {
+	init: function(name) {
 		var self = this;
 		setTimeout(function() {
 			self.name = name;
-			cb();
+			self.callback();
 		}, 200);
 	},
 
@@ -261,7 +273,7 @@ catty.meow(get("Mimi the cat sez: meh(3)"));
 // We can also extend objects by using the Extends magic property.  Tiger will
 // have everything associated with Cat, including the recursive merge into the
 // counts object.
-var Tiger = Sinch({
+var Tiger = sinch({
 
 	Extends: Cat,
 
