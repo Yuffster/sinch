@@ -8,11 +8,22 @@ var timeout = 500,
 
 log("Beginning tests; test timeout "+timeout/1000+" seconds.");
 
-function register(expected, result) {
+function register(expected, result, line) {
 	if (expected!=result) {
-		log("Expected: "+expected+" but got: "+result);
+		log("\033[31mFAIL:\033[0m "+line);
+		if (result == "[TIMEOUT]") {
+			log("      The operation timed out after "
+				+timeout/1000+" seconds.");
+		} else {
+			log("      Expected: "+expected);
+			log("        Result: "+result);
+		}
 		failed++;
-	} else passed++;
+		return false;
+	} else {
+		passed++;
+		return true;
+	}
 }
 
 function complete() {
@@ -22,22 +33,35 @@ function complete() {
 }
 
 function wait(expected) {
+	try {
+		throw new Error("Foo.");
+	} catch(e) {
+		var line = e.stack.split('\n')[2].match(/\((.*)\)/)[1];
+	}
 	pending++;
-	var done = false;
+	var done = false, timeout = false, lastSuccess = false;
 	// Set the timeout for this test.
 	setTimeout(function() {
 		if (done) return;
-		register(expected, "[TIMEOUT]");
-		done = true;
+		register(expected, "[TIMEOUT]", line);
+		timeout = true;
 	}, timeout);
 	clearTimeout(lastTimeout);
 	lastTimeout = setTimeout(function() {
 		complete();
 	}, timeout);
 	return function(result) {
-		if (done) return;
-		done = true;
-		register(expected, result);
+		if (timeout) return;
+		if (done) {
+			log("\033[31mFAIL:\033[0m Double-call from "+line);
+			if (lastSuccess) {
+				passed--;
+				failed++;
+			}
+		} else {
+			done = true;
+			lastSuccess = register(expected, result, line);
+		}
 	};
 }
 
