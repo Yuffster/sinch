@@ -2,6 +2,10 @@
 
 ---
 
+[![Build Status](https://secure.travis-ci.org/Yuffster/Sinch.png)](http://travis-ci.org/Yuffster/Sinch)
+
+---
+
 Sinch sends your asynchronous code into a **patent-pending parallel dimension** 
 where time has no meaning and everything acts as though it's synchronous.
 
@@ -58,10 +62,6 @@ data came from all of it, which kicks off a huge queue of everything leading up
 to that value.  When you pass the "results" of Sinch API operation to another
 Sinch function, the data will be desynchronized using a hidden callback before
 being passed into the other Sinch function.
-
----
-
-[![Build Status](https://secure.travis-ci.org/Yuffster/Sinch.png)](http://travis-ci.org/Yuffster/Sinch)
 
 ---
 
