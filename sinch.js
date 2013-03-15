@@ -32,17 +32,17 @@ function extend(a,b) {
 	return a;
 }
 
-function dsync_args() {
+function dsync_args(args,cb) {
 
-	var waiting = 0, a = [], q = {}, cb;
+	var waiting = 0, a = [], q = {}, called_back;
 
 	function done() {
-		if (waiting>0||cb) return;
-		cb = a.pop();
-		cb.apply(this, a);
+		if (waiting>0) return;
+		if (!called_back) cb(a);
+		called_back = true;
 	}
 
-	each(arguments, function(i,v){
+	each(args, function(i,v){
 		if (v.__deferred) {
 			delete(v.__deferred);
 			waiting++;
@@ -68,32 +68,35 @@ function wrap(inner, bind) {
 		return inner;
 	}
 	
-	function callback(args, cb) {
-		if (typeof args[args.length-1]!='function') args.push(cb);
-		var result = inner.apply(bind, args);
-		if (result) cb(result);
-	}
-	
 	return function() {
+
+		bind = clone(bind) || {};
+
+		var a = splat(arguments), cb;
+
+		function callback(args, cb) {
+			bind.callback = function(data) { cb(data); };
+			var result = inner.apply(bind, args);
+			if (result) cb(result);
+		}
+
 		// Pop the arguments, check to see if the last one is a function,
 		// in which case we'll assume we're working with a callback. This
 		// should also work for event code, using the same lazy pattern!
-		var a = splat(arguments), cb;
-		cb = a[a.length-1];
-		if (typeof cb != "function" || cb.__deferred) {
+		if (typeof a[a.length-1]=="function" && !(a[a.length-1].__deferred)) {
+			cb = a.pop();
+			dsync_args(a, function(args) { callback(args, cb); });
+		} else {
 			// Basically just doing simple currying here to actually run this
 			// code with the original arguments when something feels like
 			// handling it.
 			var fn = function(cb) {
-				a.push(function() { callback(splat(arguments), cb); });
-				dsync_args.apply(bind,a);
+				dsync_args(a, function(args) { callback(args, cb); });
 			};
 			fn.__deferred = true;
 			return fn;
-		} else {
-			a.push(function() { callback(splat(arguments), cb); });
-			dsync_args.apply(bind,a);
 		}
+
 	};
 	
 }
@@ -192,36 +195,46 @@ function dsync(o) {
 			var q   = enqueue(this, this),
 			    a   = splat(arguments),
 			    trg = q.__trigger,
-			    cbs = [], done, cb;
+			    cbs = [], done = false, cb;
 
-			delete(q.__trigger);
-			// See if we have a traditional callback and set it to fire when
-			// the actual object is ready.
 			cb = a.pop();
 			if (typeof cb != "function") {
 				// It's not a callback, put it back!
 				a.push(cb);
 				cb = false;
 			} else cbs.push(cb);
-			a.push(function() {
-				trg(self);
-				for (var i in cbs) cbs[i](self);
-				done = true;
-			});
+
+			// See if we have a traditional callback and set it to fire when
+			// the actual object is ready.
 			q.interface = true;
 			q._onInit = function(cb) { 
 				if (done) cb(self);
 				else cbs.push(cb);
 			};
+
+			function callback() { 
+				trg(self);
+				for (var i in cbs) cbs[i](self);
+				done = true;
+				delete(self.callback);
+			};
+
+			this.callback = callback;
 			init.apply(this, a);
-			// No need to ever let the user call init() directly, so let's
-			// tidy it up.
+
+			// Let's remove these properties before they ever get out into
+			// userland.
 			delete(q.init);
 			delete(this.init);
+			delete(q.__trigger);
+
 			thing = q;
+
 		}
 
-		for (var m in this) this[m] = clone(wrap(this[m], this));
+		for (var m in this) {
+			if (m!='callback') this[m] = clone(wrap(this[m], this));
+		}
 
 		// If we're initializing, we want to return the queue instead of the
 		// object.
