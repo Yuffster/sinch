@@ -1,5 +1,7 @@
 ![Sinch](logo.png)
 
+---
+
 Sinch sends your asynchronous code into a **patent-pending parallel dimension** 
 where time has no meaning and everything acts as though it's synchronous.
 
