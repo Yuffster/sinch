@@ -34,11 +34,12 @@ function complete() {
 }
 
 function wait(expected) {
+	var line;
 	total++;
 	try {
 		throw new Error("Foo.");
 	} catch(e) {
-		var line = e.stack.split('\n')[2].match(/\((.*)\)/)[1];
+		line = e.stack.split('\n')[2].match(/\((.*)\)/)[1];
 	}
 	pending++;
 	var done = false, timeout = false, lastSuccess = false;
@@ -48,9 +49,9 @@ function wait(expected) {
 		register(expected, "[TIMEOUT]", line);
 		timeout = true;
 		clearTimeout(lastTimeout);
-		lastTimeout = setTimeout(function() {
-			complete();
-		}, waitFor);
+	}, waitFor);
+	lastTimeout = setTimeout(function() {
+		complete();
 	}, waitFor);
 	return function(result) {
 		if (timeout) return;
