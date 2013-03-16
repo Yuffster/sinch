@@ -5,7 +5,13 @@ var waitFor = 500,
     failed  = 0,
     passed  = 0,
     total   = 0,
-    lastTimeout = false;
+    lastTimeout = false,
+    errored = false;
+
+process.on('uncaughtException', function (e) {
+	var errored = true;
+	console.log('\033[31m'+e+'\033[0m');
+});
 
 log("Beginning tests; test timeout "+waitFor/1000+" seconds.");
 
@@ -30,7 +36,7 @@ function register(expected, result, line) {
 function complete() {
 	log("All tests complete.");
 	log("Passed: "+passed+"/"+(total));
-	process.exit(total-passed);
+	process.exit((errored) ? 1 : total-passed);
 }
 
 function wait(expected) {
@@ -52,7 +58,7 @@ function wait(expected) {
 	}, waitFor);
 	lastTimeout = setTimeout(function() {
 		complete();
-	}, waitFor);
+	n}, waitFor);
 	return function(result) {
 		if (timeout) return;
 		if (done) {
