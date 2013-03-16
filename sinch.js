@@ -41,8 +41,10 @@ function error(message) {
 	}
 }
 
-function is_callback(f) {
-	return (typeof f == "function" && !f.__deferred);
+function get_callback(a) {
+	if (typeof a[a.length-1] == "function" && !a[a.length-1].__deferred) {
+		return a.pop();
+	}
 }
 
 function dsync_args(args,cb) {
@@ -96,10 +98,9 @@ function wrap(inner, bind) {
 		// Pop the arguments, check to see if the last one is a function,
 		// in which case we'll assume we're working with a callback. This
 		// should also work for event code, using the same lazy pattern!
-		if (is_callback(a[a.length-1])) {
-			cb = a.pop();
-			dsync_args(a, function(args) { callback(args, cb); });
-		} else {
+		var cb = get_callback(a);
+		if (cb) dsync_args(a, function(args) { callback(args, cb); });
+		else {
 			// Basically just doing simple currying here to actually run this
 			// code with the original arguments when something feels like
 			// handling it.
@@ -216,7 +217,7 @@ function dsync(o) {
 			    a   = splat(arguments),
 			    trg = q.__trigger,
 			    cbs = [], done = false, 
-			    cb  = is_callback(a[a.length-1]) ? a.pop() : false;
+			    cb  = get_callback(a);
 
 			if (cb) cbs.push(cb);
 
