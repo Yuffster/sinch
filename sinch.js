@@ -125,8 +125,9 @@ function enqueue(o, bind) {
 		bound = bound || b || bind;
 		each_shift(q, function(v) {
 			var meth = o[v[0]], args = splat(v[1]), next = q[0], cb = v[2];
-			args.push(cb);
+			if (cb) args.push(cb);
 			var result = meth.apply(bound, args);
+			if (result&&cb) cb(result);
 			// Look ahead to see if the result is tied to a subqueue interface.
 			if (next && next[0]=="__cb") {
 				// Pass a callback to the result.
@@ -162,14 +163,13 @@ function enqueue(o, bind) {
 				// method actually executes.
 				var subq = enqueue(type.prototype),
 				    strg = subq.__trigger,
-				    a    = splat(arguments), 
-				    cb   = (is_callback(a[a.length-1])) ? a.pop() : false;
+				    a    = splat(arguments);
 				delete subq.__trigger;
 				// Take the result of the operation which presumably spawned the
 				// actual object. Bind the enqueued calls to the returned value,
 				// the actual object we're manipulating, and trigger the queue.
 				// This is also where we could do an error check.
-				push(k, arguments, cb);
+				push(k, arguments);
 				// The callback will return the final returned object after the
 				// enqueued operation is performed.
 				push("__cb", function(bind) {
@@ -177,13 +177,17 @@ function enqueue(o, bind) {
 					// to wait until that object's initialization is complete
 					// before we bind it to the queue.
 					// TODO: This is the only huge hack left in the project.
-					if (bind._onInit) bind._onInit(strg);
+					if (bind._onInit) bind._onInit(function(self) {
+						strg(self);
+					});
 					// Otherwise, we're good to go. Yay!
 					else strg(bind);
 				});
 				return subq;
 			};
 		} else standin[k] = wrap(function() {
+			var a = splat(arguments);
+			a.push(this.callback);
 			push(k, arguments, this.callback);
 		});
 	});

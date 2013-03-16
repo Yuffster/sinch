@@ -289,7 +289,7 @@ var Tiger = sinch({
 // And now that Tiger is defined, we can extend the Cat prototype to return a
 // Tiger queued instance when catchTiger is called.
 Cat.prototype.catchTiger = [Tiger, function(name,cb) {
-	cb(new Tiger(name));
+	this.callback(new Tiger(name));
 }];
 
 var tiger = new Tiger('Tony');
