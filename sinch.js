@@ -177,9 +177,7 @@ function enqueue(o, bind) {
 					// to wait until that object's initialization is complete
 					// before we bind it to the queue.
 					// TODO: This is the only huge hack left in the project.
-					if (bind._onInit) bind._onInit(function(self) {
-						strg(self);
-					});
+					if (bind._onInit) bind._onInit(strg);
 					// Otherwise, we're good to go. Yay!
 					else strg(bind);
 				});
