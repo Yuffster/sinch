@@ -1,19 +1,20 @@
 var log = require('util').puts;
 
-var timeout = 500,
+var waitFor = 500,
     pending = 0,
     failed  = 0,
     passed  = 0,
+    total   = 0,
     lastTimeout = false;
 
-log("Beginning tests; test timeout "+timeout/1000+" seconds.");
+log("Beginning tests; test timeout "+waitFor/1000+" seconds.");
 
 function register(expected, result, line) {
 	if (expected!=result) {
 		log("\033[31mFAIL:\033[0m "+line);
 		if (result == "[TIMEOUT]") {
 			log("      The operation timed out after "
-				+timeout/1000+" seconds.");
+				+waitFor/1000+" seconds.");
 		} else {
 			log("      Expected: "+expected);
 			log("        Result: "+result);
@@ -28,11 +29,12 @@ function register(expected, result, line) {
 
 function complete() {
 	log("All tests complete.");
-	log("Passed: "+passed+"/"+(passed+failed));
-	process.exit(failed);
+	log("Passed: "+passed+"/"+(total));
+	process.exit(total-passed);
 }
 
 function wait(expected) {
+	total++;
 	try {
 		throw new Error("Foo.");
 	} catch(e) {
@@ -45,11 +47,11 @@ function wait(expected) {
 		if (done) return;
 		register(expected, "[TIMEOUT]", line);
 		timeout = true;
-	}, timeout);
-	clearTimeout(lastTimeout);
-	lastTimeout = setTimeout(function() {
-		complete();
-	}, timeout);
+		clearTimeout(lastTimeout);
+		lastTimeout = setTimeout(function() {
+			complete();
+		}, waitFor);
+	}, waitFor);
 	return function(result) {
 		if (timeout) return;
 		if (done) {
