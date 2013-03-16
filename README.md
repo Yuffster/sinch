@@ -2,7 +2,7 @@
 
 ---
 
-[![Build Status](https://secure.travis-ci.org/Yuffster/Sinch.png)](http://travis-ci.org/Yuffster/Sinch)
+[![Build Status](https://secure.travis-ci.org/Yuffster/sinch.png)](http://travis-ci.org/Yuffster/sinch)
 
 ---
 
