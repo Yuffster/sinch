@@ -32,6 +32,19 @@ function extend(a,b) {
 	return a;
 }
 
+function error(message) {
+	try {
+		throw new Error(message);
+	} catch(e) {
+		e.stack = e.stack.split('\n').slice(3).join('\n');
+		return e;
+	}
+}
+
+function is_callback(f) {
+	return (typeof f == "function" && !f.__deferred);
+}
+
 function dsync_args(args,cb) {
 
 	var waiting = 0, a = [], q = {}, called_back;
@@ -77,13 +90,13 @@ function wrap(inner, bind) {
 		function callback(args, cb) {
 			bind.callback = function(data) { cb(data); };
 			var result = inner.apply(bind, args);
-			if (result) cb(result);
+			if (result&&cb) cb(result);
 		}
 
 		// Pop the arguments, check to see if the last one is a function,
 		// in which case we'll assume we're working with a callback. This
 		// should also work for event code, using the same lazy pattern!
-		if (typeof a[a.length-1]=="function" && !(a[a.length-1].__deferred)) {
+		if (is_callback(a[a.length-1])) {
 			cb = a.pop();
 			dsync_args(a, function(args) { callback(args, cb); });
 		} else {
@@ -111,8 +124,9 @@ function enqueue(o, bind) {
 		done  = true;
 		bound = bound || b || bind;
 		each_shift(q, function(v) {
-			var meth   = o[v[0]], args = splat(v[1]), next = q[0],
-			    result = wrap(meth, bound).apply(bound, args);
+			var meth = o[v[0]], args = splat(v[1]), next = q[0], cb = v[2];
+			args.push(cb);
+			var result = meth.apply(bound, args);
 			// Look ahead to see if the result is tied to a subqueue interface.
 			if (next && next[0]=="__cb") {
 				// Pass a callback to the result.
@@ -121,8 +135,8 @@ function enqueue(o, bind) {
 		});
 	}
 
-	function push(meth, args) {
-		q.push([meth, args]);
+	function push(meth, args, callback) {
+		q.push([meth, args, callback]);
 		if (done) trigger();
 	}
 
@@ -138,20 +152,24 @@ function enqueue(o, bind) {
 		// This keeps us from doing something like wrapping an object or data
 		// property. It also keeps users from being able to access properties
 		// without using a callback.
-		} else if (typeOf(v) != "function") return;
+		} else if (typeOf(v) != "function") {
+			return;
+		}
 		// Return an interface if that's what we're dealing with.
 		if (type) {
 			standin[k] = function() {
-				// Start a new queue for the interface, trigger it after
-				// this method actually executes.
+				// Start a new queue for the interface, trigger it after this
+				// method actually executes.
 				var subq = enqueue(type.prototype),
-				    strg = subq.__trigger;
+				    strg = subq.__trigger,
+				    a    = splat(arguments), 
+				    cb   = (is_callback(a[a.length-1])) ? a.pop() : false;
 				delete subq.__trigger;
-				// Take the result of the operation which presumbly spawned the
+				// Take the result of the operation which presumably spawned the
 				// actual object. Bind the enqueued calls to the returned value,
 				// the actual object we're manipulating, and trigger the queue.
 				// This is also where we could do an error check.
-				push(k, arguments);
+				push(k, arguments, cb);
 				// The callback will return the final returned object after the
 				// enqueued operation is performed.
 				push("__cb", function(bind) {
@@ -160,13 +178,13 @@ function enqueue(o, bind) {
 					// before we bind it to the queue.
 					// TODO: This is the only huge hack left in the project.
 					if (bind._onInit) bind._onInit(strg);
-					// Otherwise, we're good to go.  Yay!
+					// Otherwise, we're good to go. Yay!
 					else strg(bind);
 				});
 				return subq;
 			};
-		} else standin[k] = wrap(function() { 
-			push(k, arguments);
+		} else standin[k] = wrap(function() {
+			push(k, arguments, this.callback);
 		});
 	});
 	
@@ -195,18 +213,15 @@ function dsync(o) {
 			var q   = enqueue(this, this),
 			    a   = splat(arguments),
 			    trg = q.__trigger,
-			    cbs = [], done = false, cb;
+			    cbs = [], done = false, 
+			    cb  = is_callback(a[a.length-1]) ? a.pop() : false;
 
-			cb = a.pop();
-			if (typeof cb != "function") {
-				// It's not a callback, put it back!
-				a.push(cb);
-				cb = false;
-			} else cbs.push(cb);
+			if (cb) cbs.push(cb);
 
 			// See if we have a traditional callback and set it to fire when
 			// the actual object is ready.
 			q.interface = true;
+
 			q._onInit = function(cb) { 
 				if (done) cb(self);
 				else cbs.push(cb);
@@ -220,6 +235,7 @@ function dsync(o) {
 			};
 
 			this.callback = callback;
+
 			init.apply(this, a);
 
 			// Let's remove these properties before they ever get out into
