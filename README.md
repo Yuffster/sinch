@@ -179,30 +179,30 @@ far less error prone.
 		var output = "";
 		for (var i in arguments) output += arguments[i];
 		return output;
-	}); cat = Sinch(cat);
+	}); cat = sinch(cat);
 	
 	function read(file, callback) {
 		async.file_exists(file, function(exists) {
 			if (!exists) callback('');
 			else async.file_read(file, callback);
 		});
-	}; read = Sinch(read);
+	}; read = sinch(read);
 	
-	cat(read('readme.txt'), read('file.txt'), read('other.txt'))(console.log);
+	cat(read('readme.txt'), read('file.txt'), read('other.txt'), console.log);
 
 We could even make the example do even more advanced things without sacrificing
 readability or adding much code.
 
 	function get(url) { $.ajax(url, callback); }
-	get = Sinch(get);
+	get = sinch(get);
 	
-	cat(read('readme.txt'), get('data.json'), read('other.txt'))(console.log);
+	cat(read('readme.txt'), get('data.json'), read('other.txt'), console.log);
 	
 And, since Sinch doesn't modify the original values of the objects passed
 into it, and follows the same standard callback pattern of other JavaScript
 code, we could simply our code even further.
 
-	get = Sinch($.ajax);
+	get = sinch($.ajax);
 
 ### Dynamic Arguments
 
@@ -210,6 +210,9 @@ Sinch provides `this.callback` to all wrapped functions and methods to allow
 for explicit callback support, which means when we're traversing a dynamic 
 arguments list, we don't have to manually check the last argument and infer
 whether or not it's meant to be a callback.
+
+Otherwise, you'd have to do something like this in every function which takes
+dynamic arguments and a callback:
 
 	for (var i in arguments) {
 		if (i==arguments.length-1 && typeof arguments[i]=="function") {
@@ -289,7 +292,8 @@ For example:
 	var Database = sinch({
 	
 		// [...]
-		init: function(server, db, callback) {
+		init: function(server, db) {
+			var callback = this.callback;
 			this.dblib.connect(server, db, function() {
 				callback();
 			});
