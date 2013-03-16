@@ -2,7 +2,7 @@
 	"author": "Michelle Steigerwalt <msteigerwalt@gmail.com>",
 	"name": "sinch",
 	"description": "A powerful wrapper for interfaces which creates extendable, synchronisity-agnostic interfaces which can be seamlessly passed around to other desynchronous interfaces as if they were synchronous arguments.",
-	"version": "0.0.2",
+	"version": "0.4.0",
 	"homepage": "http://github.com/Yuffster/sinch",
 	"main": "./sinch.js",
 	"repository": {
