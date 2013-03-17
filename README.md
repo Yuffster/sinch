@@ -131,7 +131,7 @@ previous code can still be used when wrapping methods in Sinch.
 		console.log(message);
 	});
 
-	log(echo(message));
+	log(echo('hello!'));
 
 Let's try something a little less abstract, and assume we're using a Sinch-
 based API which handles file transfers.  We want to chain a lot of asynchronous
