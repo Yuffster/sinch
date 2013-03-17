@@ -265,7 +265,7 @@ function sinch(o) {
 
 }
 
-if (module) module.exports = sinch;
-else if (typeof window !== undefined) window.sinch = sinch;
+if (typeof module !== "undefined") module.exports = sinch;
+else if (typeof window !== "undefined") window.sinch = sinch;
 
 }());
