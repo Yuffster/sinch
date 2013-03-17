@@ -215,7 +215,7 @@ function sinch(o) {
 
 			// See if we have a traditional callback and set it to fire when
 			// the actual object is ready.
-			q.interface = true;
+			q['interface'] = true;
 
 			q._onInit = function(cb) { 
 				if (done) cb(self);
