@@ -1,3 +1,5 @@
+(function() {
+
 function splat(arr) {
 	var o = [];
 	for (var i in arr) o[i] = arr[i];
@@ -30,15 +32,6 @@ function extend(a,b) {
 		for (var i in b) a[i] = extend(a[i], b[i]);
 	} else a = a || b;
 	return a;
-}
-
-function error(message) {
-	try {
-		throw new Error(message);
-	} catch(e) {
-		e.stack = e.stack.split('\n').slice(3).join('\n');
-		return e;
-	}
 }
 
 function get_callback(a) {
@@ -98,7 +91,7 @@ function wrap(inner, bind) {
 		// Pop the arguments, check to see if the last one is a function,
 		// in which case we'll assume we're working with a callback. This
 		// should also work for event code, using the same lazy pattern!
-		var cb = get_callback(a);
+		cb = get_callback(a);
 		if (cb) dsync_args(a, function(args) { callback(args, cb); });
 		else {
 			// Basically just doing simple currying here to actually run this
@@ -163,8 +156,7 @@ function enqueue(o, bind) {
 				// Start a new queue for the interface, trigger it after this
 				// method actually executes.
 				var subq = enqueue(type.prototype),
-				    strg = subq.__trigger,
-				    a    = splat(arguments);
+				    strg = subq.__trigger;
 				delete subq.__trigger;
 				// Take the result of the operation which presumably spawned the
 				// actual object. Bind the enqueued calls to the returned value,
@@ -197,7 +189,7 @@ function enqueue(o, bind) {
 
 }
 
-function dsync(o) {
+function sinch(o) {
 
 	if (typeof o == "function") return wrap(o);
 
@@ -230,7 +222,7 @@ function dsync(o) {
 				else cbs.push(cb);
 			};
 
-			function callback() { 
+			var callback = function() { 
 				trg(self);
 				for (var i in cbs) cbs[i](self);
 				done = true;
@@ -261,6 +253,7 @@ function dsync(o) {
 
 	};
 
+	// Simple magic property to help things extend other things.
 	if (o.Extends) {
 		o = extend(o, o.Extends.prototype);
 		delete(o.Extends);
@@ -272,4 +265,7 @@ function dsync(o) {
 
 }
 
-module.exports = dsync;
+if (module) module.exports = sinch;
+else if (typeof window !== undefined) window.sinch = sinch;
+
+}());
