@@ -11,6 +11,7 @@ var waitFor = 500,
 process.on('uncaughtException', function (e) {
 	var errored = true;
 	console.log('\033[31m'+e+'\033[0m');
+	console.log(e.stack);
 });
 
 log("Beginning tests; test timeout "+waitFor/1000+" seconds.");
