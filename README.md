@@ -123,7 +123,7 @@ our code, which is indistinguishable from procedural code.
 This code would have the exact same effect as the previous code.  In fact, the
 previous code can still be used when wrapping methods in Sinch.
 
-	var echo = sinch(function(message, callback) {
+	var echo = sinch(function(message) {
 		this.callback("I'm echoing, "+message+".");
 	});
 	
@@ -181,7 +181,8 @@ far less error prone.
 		return output;
 	}); cat = sinch(cat);
 	
-	function read(file, callback) {
+	function read(file) {
+		var callback = this.callback;
 		async.file_exists(file, function(exists) {
 			if (!exists) callback('');
 			else async.file_read(file, callback);
