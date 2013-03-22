@@ -59,7 +59,7 @@ function wait(expected) {
 	}, waitFor);
 	lastTimeout = setTimeout(function() {
 		complete();
-	n}, waitFor);
+	}, waitFor+100);
 	return function(result) {
 		if (timeout) return;
 		if (done) {
