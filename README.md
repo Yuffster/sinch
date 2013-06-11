@@ -95,13 +95,15 @@ recursive extension of one Sinch API by another.
 Let's start with two simple asynchronous function which call other functions
 with their values.
 
-	function echo(message, callback) {
-		callback("I'm echoing, "+message+".");
-	}
-	
-	function log(message) {
-		console.log(message);
-	}
+```javascript
+function echo(message, callback) {
+	callback("I'm echoing, "+message+".");
+}
+
+function log(message) {
+	console.log(message);
+}
+```
 	
 If we were to call `echo("hello world", console.log)`, we would get the response
 of, "I'm echoing, hello world."  This is how traditional modules present their
@@ -111,9 +113,11 @@ The problem with that is that the end user must create an intermediary anonymous
 function each time it's necessary to pass a value from one endpoint to another.
 This code would end up logging to the console, "I'm echoing, hello world."
 
-	echo('hello world', function(message) {
-		log(message);
-	});
+```javascript
+echo('hello world', function(message) {
+	log(message);
+});
+```
 	
 This is a pattern that JavaScript developers are very used to!  However, if we
 were to wrap both `log` and `echo` into Sinch, we would--without sacrificing
@@ -123,15 +127,17 @@ our code, which is indistinguishable from procedural code.
 This code would have the exact same effect as the previous code.  In fact, the
 previous code can still be used when wrapping methods in Sinch.
 
-	var echo = sinch(function(message) {
-		this.callback("I'm echoing, "+message+".");
-	});
-	
-	var log = sinch(function(message) {
-		console.log(message);
-	});
+```javascript
+var echo = sinch(function(message) {
+	this.callback("I'm echoing, "+message+".");
+});
 
-	log(echo('hello!'));
+var log = sinch(function(message) {
+	console.log(message);
+});
+
+log(echo('hello!'));
+```
 
 Let's try something a little less abstract, and assume we're using a Sinch-
 based API which handles file transfers.  We want to chain a lot of asynchronous
@@ -142,68 +148,76 @@ operations are pending and nest callbacks.
 
 The code for something like this can get ugly fairly quickly!
 
-	function cat() {
-		var output, i, files = [], callback;
-		function next() {
-			if (!callback) return;
-			for (var f in files) if (files[f]) output += files[f];
-			callback(output);
-		}
-		for (i in arguments) {
-			// Dynamic arguments; check the last argument for a callback.
-			if (i==arguments.length-1 && typeof arguments[i]=="function") {
-				callback = arguments[i];
-			}
-			pending++;
-			async.file_exists(arguments[i], function(success) {
-				pending--;
-				if (pending==0) next();
-				if (!success) return;
-				pending++;
-				async.file_read(arguments[i], function(data) {
-					pending--;
-					files[i] = data;
-					if (pending==0) next();
-				});
-			});
-		}
+```javascript
+function cat() {
+	var output, i, files = [], callback;
+	function next() {
+		if (!callback) return;
+		for (var f in files) if (files[f]) output += files[f];
+		callback(output);
 	}
-	
-	cat('readme.txt', 'file.txt', 'other.txt', console.log);
+	for (i in arguments) {
+		// Dynamic arguments; check the last argument for a callback.
+		if (i==arguments.length-1 && typeof arguments[i]=="function") {
+			callback = arguments[i];
+		}
+		pending++;
+		async.file_exists(arguments[i], function(success) {
+			pending--;
+			if (pending==0) next();
+			if (!success) return;
+			pending++;
+			async.file_read(arguments[i], function(data) {
+				pending--;
+				files[i] = data;
+				if (pending==0) next();
+			});
+		});
+	}
+}
+
+cat('readme.txt', 'file.txt', 'other.txt', console.log);
+```
 	
 Assuming we didn't want to reinvent the file API, we could refactor the same
 code using Sinch to be much easier to understand, more pleasant to use, and
 far less error prone.
 
-	function cat() {
-		var output = "";
-		for (var i in arguments) output += arguments[i];
-		return output;
-	}); cat = sinch(cat);
-	
-	function read(file) {
-		var callback = this.callback;
-		async.file_exists(file, function(exists) {
-			if (!exists) callback('');
-			else async.file_read(file, callback);
-		});
-	}; read = sinch(read);
-	
-	cat(read('readme.txt'), read('file.txt'), read('other.txt'), console.log);
+```javascript
+function cat() {
+	var output = "";
+	for (var i in arguments) output += arguments[i];
+	return output;
+}); cat = sinch(cat);
+
+function read(file) {
+	var callback = this.callback;
+	async.file_exists(file, function(exists) {
+		if (!exists) callback('');
+		else async.file_read(file, callback);
+	});
+}; read = sinch(read);
+
+cat(read('readme.txt'), read('file.txt'), read('other.txt'), console.log);
+```
 
 We could even make the example do even more advanced things without sacrificing
 readability or adding much code.
 
-	function get(url) { $.ajax(url, callback); }
-	get = sinch(get);
-	
-	cat(read('readme.txt'), get('data.json'), read('other.txt'), console.log);
+```javascript
+function get(url) { $.ajax(url, callback); }
+get = sinch(get);
+
+cat(read('readme.txt'), get('data.json'), read('other.txt'), console.log);
+```
 	
 And, since Sinch doesn't modify the original values of the objects passed
 into it, and follows the same standard callback pattern of other JavaScript
 code, we could simply our code even further.
 
-	get = sinch($.ajax);
+```javascript
+get = sinch($.ajax);
+```
 
 ### Dynamic Arguments
 
@@ -215,13 +229,15 @@ whether or not it's meant to be a callback.
 Otherwise, you'd have to do something like this in every function which takes
 dynamic arguments and a callback:
 
-	for (var i in arguments) {
-		if (i==arguments.length-1 && typeof arguments[i]=="function") {
-			callback = arguments[i];
-		} else {
-			//Do your stuff here.
-		}
+```javascript
+for (var i in arguments) {
+	if (i==arguments.length-1 && typeof arguments[i]=="function") {
+		callback = arguments[i];
+	} else {
+		//Do your stuff here.
 	}
+}
+```
 
 ### Optional Parameters with Callback Support
 
@@ -235,50 +251,58 @@ always last.
 
 Without Sinch, we would have to do this:
 
-	function outputMessage(msg,name,cb) {
-		if (typeof name=="function") {
-			cb = name;
-			name = "Someone";
-		}
-		return name+" said: ", msg;
+```javascript
+function outputMessage(msg,name,cb) {
+	if (typeof name=="function") {
+		cb = name;
+		name = "Someone";
 	}
+	return name+" said: ", msg;
+}
+```
 
 However, using Sinch, we can make the code much more readable, and focus on
 application logic rather than parsing our arguments.
 
-	var outputMessage = sinch(function(msg,name) {
-		name = name || "Someone";
-		return name+" said: "+ msg;
-	});
+```javascript
+var outputMessage = sinch(function(msg,name) {
+	name = name || "Someone";
+	return name+" said: "+ msg;
+});
+```
 
 Or, asynchronously:
 
-	var outputMessage = sinch(function(msg,name) {
-		name = name || "Someone";
-		this.callback(name+" said: "+ msg);
-	});
+```javascript
+var outputMessage = sinch(function(msg,name) {
+	name = name || "Someone";
+	this.callback(name+" said: "+ msg);
+});
+```
 
 ### Objects
 
 If we pass an object into Sinch, we'll get back a constructor function with
 methods attached to its prototype.
 
-	var Database = sinch({
-		
-		dblib: require('dblib'),
-		
-		execute: function(op) {
-			return this.dblib.execute(op);
-		},
-		
-		find: function(filter, callback) {
-			this.execute('find '+filter, callback);
-		}
-		
-	});
+```javascript
+var Database = sinch({
 	
-	var db = new Database();
-	db.find('id=1', console.log);
+	dblib: require('dblib'),
+	
+	execute: function(op) {
+		return this.dblib.execute(op);
+	},
+	
+	find: function(filter, callback) {
+		this.execute('find '+filter, callback);
+	}
+	
+});
+```
+
+var db = new Database();
+db.find('id=1', console.log);
 	
 We have two magic property names within this object, `init` and `Extends`.
 
@@ -290,36 +314,42 @@ and then queued to be later executed when the object is ready.
 
 For example:
 
-	var Database = sinch({
+```javascript
+var Database = sinch({
+
+	// [...]
+	init: function(server, db) {
+		var callback = this.callback;
+		this.dblib.connect(server, db, function() {
+			callback();
+		});
+	}
 	
-		// [...]
-		init: function(server, db) {
-			var callback = this.callback;
-			this.dblib.connect(server, db, function() {
-				callback();
-			});
-		}
-		
-	});
+});
+```
 
 Note that we can use the exact same code from the previous example to utilize
 the Database API.  Each method will be executed when all required objects have
 initialized.
 
-	var db = new Database();
-	db.find('id=1', console.log);
+```javascript
+var db = new Database();
+db.find('id=1', console.log);
+```
 
 ### Extending 
 
 We could also use `Extends` to extend one API from another.
 
-	var LiteDB = sinch({
+```javascript
+var LiteDB = sinch({
+
+	Extends: Database,
 	
-		Extends: Database,
-		
-		dblib: require('dblite')
-		
-	});
+	dblib: require('dblite')
+	
+});
+```
 
 ### Interfaces
 
@@ -327,18 +357,20 @@ With the simple use of a `[type, function]` syntax within object definition, you
 can let Sinch know it should return a dummy interface of *type*, and run it
 once everything has been initialized.
 
-	var Cat = sinch({
+```javascript
+var Cat = sinch({
+
+	init: function(name, callback) {
+		console.log("Waking up a cat named", name);
+		setTimeout(callback, 1000);
+	},
 	
-		init: function(name, callback) {
-			console.log("Waking up a cat named", name);
-			setTimeout(callback, 1000);
-		},
-		
-		catchMouse: [Mouse, function() { 
-			return new Mouse();
-		}]
-		
-	});
+	catchMouse: [Mouse, function() { 
+		return new Mouse();
+	}]
+	
+});
+```
 
 This allows the user of the interface to work with the returned object as if it
 were immediately available.
